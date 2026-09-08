@@ -1,59 +1,59 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tabla Periódica Interactiva</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="script" href="script.js">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tabla Periódica de los Elementos</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app">
-    <section class="table-wrapper">
-      <h1>Tabla Periódica de los Elementos</h1>
-      <div id="periodic-table" class="periodic-table" aria-label="Tabla periódica"></div>
-      <div id="legend" class="legend"></div>
-    </section>
+<main class="app">
+<section class="table-wrapper">
+<h1>Tabla Periódica de los Elementos</h1>
+<div id="periodic-table" class="periodic-table"></div>
+<div id="legend" class="legend"></div>
+</section>
 
-    <section class="controls">
-      <label for="search">Buscar:</label>
-      <input id="search" type="text" placeholder="Nombre, símbolo o número atómico">
-      <button id="search-btn">Buscar</button>
-      <button id="clear-btn">Limpiar</button>
-      <button id="compare-btn">Comparar</button>
-      <button id="favorite-btn">☆ Favorito</button>
-      <button id="theme-btn">Tema claro</button>
-      <audio id="hover-sound" preload="auto">
-      <source src="hover_sonido.wav" type="audio/wav">
-      </audio>
-      <select id="scale">
-        <option>Colores: categorías</option>
-        <option>Escala: masa</option>
-        <option>Escala: número atómico</option>
-        <option>Estado físico</option>
-      </select>
-    </section>
+<section class="controls">
+<label for="search">Buscar:</label>
+<input id="search" type="text" placeholder="Nombre, símbolo o número atómico">
+<button id="search-btn">Buscar</button>
+<button id="clear-btn">Limpiar</button>
+<button id="compare-btn">Comparar</button>
+<button id="favorite-btn">☆ Favorito</button>
+<button id="theme-btn">Tema claro</button>
+<select id="scale">
+<option>Colores: categorías</option>
+<option>Escala: masa</option>
+<option>Escala: número atómico</option>
+<option>Estado físico</option>
+</select>
+</section>
 
-    <div id="results" class="results" hidden></div>
-    <div id="info" class="info">Haz clic en un elemento para ver su información.</div>
-  </main>
+<div id="results" class="results" hidden></div>
+<div id="info" class="info">Haz clic en un elemento para ver su información.</div>
 
-  <div id="preview" class="preview" hidden></div>
+<audio id="hover-sound" preload="auto">
+<source src="hover_sonido.wav" type="audio/wav">
+</audio>
+</main>
 
-  <div id="details-modal" class="modal-backdrop" hidden>
-    <div class="modal" role="dialog" aria-modal="true">
-      <button id="modal-close" class="modal-close" aria-label="Cerrar">×</button>
-      <div id="modal-content"></div>
-    </div>
-  </div>
+<div id="preview" class="preview" hidden></div>
 
-  <div id="comparison-modal" class="modal-backdrop" hidden>
-    <div class="modal comparison-modal" role="dialog" aria-modal="true">
-      <button id="comparison-close" class="modal-close" aria-label="Cerrar">×</button>
-      <div id="comparison-content"></div>
-    </div>
-  </div>
+<div id="details-modal" class="modal-backdrop" hidden>
+<div class="modal">
+<button id="modal-close" class="modal-close">×</button>
+<div id="modal-content"></div>
+</div>
+</div>
 
-  <script src="script.js"></script>
+<div id="comparison-modal" class="modal-backdrop" hidden>
+<div class="modal comparison-modal">
+<button id="comparison-close" class="modal-close">×</button>
+<div id="comparison-content"></div>
+</div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
