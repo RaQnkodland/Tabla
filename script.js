@@ -105,7 +105,7 @@ let filterCategory=null;
 let darkTheme=true;
 const elementNodes=new Map();
 
-if(sonidoHover)sonidoHover.volume=.3;
+sonidoHover.volume=.3;
 
 function estadoFisico(sym){
 if(['H','He','N','O','F','Ne','Cl','Ar','Kr','Xe','Rn','Og'].includes(sym))return'Gas';
@@ -122,7 +122,7 @@ return'#'+rojo.toString(16).padStart(2,'0')+'70'+azul.toString(16).padStart(2,'0
 }
 
 function playSound(type){
-if(type!=='hover'||!sonidoHover)return;
+if(type!=='hover')return;
 sonidoHover.currentTime=0;
 sonidoHover.play().catch(()=>{});
 }
