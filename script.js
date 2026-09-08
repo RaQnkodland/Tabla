@@ -63,8 +63,8 @@ const elementos=[
 ];
 
 const colores={
-'no metal':'#4CAF50','gas noble':'#FF9800','metal alcalino':'#F44336',
-'alcalinotérreo':'#FF5722','transición':'#2196F3','post-transición':'#0373F4',
+'no metal':'#4CAF50','gas noble':'#FF9800','metal alcalino':'#e41f11',
+'alcalinotérreo':'#FF5722','transición':'#33a3ff','post-transición':'#026de7',
 'metaloide':'#8BC34A','halógeno':'#E91E63','lantánido':'#9C27B0',
 'actínido':'#673AB7','desconocido':'#607D8B'
 };
