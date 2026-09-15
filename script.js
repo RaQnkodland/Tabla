@@ -79,7 +79,12 @@ const caracteristicas={
 'transición':'Metal con aplicaciones industriales y tecnológicas.',
 'no metal':'Elemento esencial en numerosos compuestos.',
 'gas noble':'Gas muy poco reactivo, usado en iluminación y tecnología.',
-'halógeno':'Elemento reactivo, presente en sales y desinfectantes.'
+'halógeno':'Elemento reactivo, presente en sales y desinfectantes.',
+'metaloide':'Elemento con propiedades intermedias entre metales y no metales.',
+'post-transición':'Metal maleable usado en aleaciones, componentes y materiales.',
+'lantánido':'Metal de tierras raras usado en imanes, pantallas y tecnología.',
+'actínido':'Elemento pesado, muchos de ellos radiactivos y de origen sintético.',
+'desconocido':'Elemento superpesado con propiedades que todavía se investigan.'
 };
 
 const tabla=document.getElementById('periodic-table');
@@ -89,12 +94,19 @@ const results=document.getElementById('results');
 const info=document.getElementById('info');
 const scale=document.getElementById('scale');
 const favoriteBtn=document.getElementById('favorite-btn');
+const favoritesFilterBtn=document.getElementById('favorites-filter-btn');
 const compareBtn=document.getElementById('compare-btn');
 const themeBtn=document.getElementById('theme-btn');
+const homeBtn=document.getElementById('home-btn');
 const preview=document.getElementById('preview');
 const detailsModal=document.getElementById('details-modal');
 const comparisonModal=document.getElementById('comparison-modal');
+const quizModal=document.getElementById('quiz-modal');
 const sonidoHover=document.getElementById('hover-sound');
+const soundBtn=document.getElementById('sound-btn');
+const startScreen=document.getElementById('start-screen');
+const app=document.getElementById('app');
+const startBtn=document.getElementById('start-btn');
 
 let selectedElement=null;
 let hoveredElement=null;
@@ -102,10 +114,34 @@ let favorites=new Set();
 let comparison=[];
 let comparisonActive=false;
 let filterCategory=null;
+let favoritesOnly=false;
+let quizScore=0;
+let quizQuestion=null;
 let darkTheme=true;
 const elementNodes=new Map();
 
 sonidoHover.volume=.3;
+let sonidoMuteado=localStorage.getItem('sonido-muteado')==='true';
+sonidoHover.muted=sonidoMuteado;
+
+function actualizarBotonSonido(){
+soundBtn.textContent=sonidoMuteado?'Sonido: silenciado':'Sonido: activado';
+soundBtn.setAttribute('aria-label',sonidoMuteado?'Activar sonidos':'Silenciar sonidos');
+soundBtn.classList.toggle('active',sonidoMuteado);
+}
+
+function alternarSonido(){
+sonidoMuteado=!sonidoMuteado;
+sonidoHover.muted=sonidoMuteado;
+localStorage.setItem('sonido-muteado',sonidoMuteado);
+actualizarBotonSonido();
+}
+
+try{
+favorites=new Set(JSON.parse(localStorage.getItem('elementos-favoritos')||'[]'));
+}catch(error){
+favorites=new Set();
+}
 
 function estadoFisico(sym){
 if(['H','He','N','O','F','Ne','Cl','Ar','Kr','Xe','Rn','Og'].includes(sym))return'Gas';
@@ -127,6 +163,29 @@ sonidoHover.currentTime=0;
 sonidoHover.play().catch(()=>{});
 }
 
+const movimientoReducido=window.matchMedia('(prefers-reduced-motion: reduce)');
+let movimientoPendiente=false;
+let posicionPuntero={x:0,y:0};
+
+function actualizarFondo(){
+movimientoPendiente=false;
+const desplazamientoX=((posicionPuntero.x/window.innerWidth)-.5)*18;
+const desplazamientoY=((posicionPuntero.y/window.innerHeight)-.5)*18;
+document.body.style.setProperty('--dot-x',`${desplazamientoX}px`);
+document.body.style.setProperty('--dot-y',`${desplazamientoY}px`);
+document.body.style.setProperty('--dot-soft-x',`${13-desplazamientoX*.65}px`);
+document.body.style.setProperty('--dot-soft-y',`${17-desplazamientoY*.65}px`);
+}
+
+function moverFondo(event){
+if(movimientoReducido.matches)return;
+posicionPuntero={x:event.clientX,y:event.clientY};
+if(!movimientoPendiente){
+movimientoPendiente=true;
+requestAnimationFrame(actualizarFondo);
+}
+}
+
 function crearTabla(){
 tabla.innerHTML='';
 elementNodes.clear();
@@ -141,6 +200,7 @@ node.dataset.category=cat;
 node.style.gridColumn=col;
 node.style.gridRow=fila;
 node.innerHTML=`<span class="atomic-number">${z}</span><span class="symbol">${sym}</span><span class="star"></span>`;
+node.querySelector('.star').textContent=favorites.has(z)?'★':'';
 node.addEventListener('mouseenter',e=>onHover(node,e));
 node.addEventListener('mouseleave',onLeave);
 node.addEventListener('click',()=>seleccionarElemento(node));
@@ -182,7 +242,7 @@ aplicarFiltroVisual();
 function aplicarFiltroVisual(){
 elementos.forEach(el=>{
 const node=elementNodes.get(el[0]);
-const activo=!filterCategory||el[4]===filterCategory;
+const activo=(!filterCategory||el[4]===filterCategory)&&(!favoritesOnly||favorites.has(el[0]));
 node.classList.toggle('dimmed',!activo);
 node.querySelectorAll('.atomic-number,.symbol').forEach(t=>t.style.color=activo?'white':'#90A4AE');
 });
@@ -217,7 +277,19 @@ favorites.add(z);
 selectedElement.querySelector('.star').textContent='★';
 info.textContent='Elemento añadido a favoritos.';
 }
+localStorage.setItem('elementos-favoritos',JSON.stringify([...favorites]));
 actualizarFavorito();
+aplicarFiltroVisual();
+}
+
+function alternarFiltroFavoritos(){
+favoritesOnly=!favoritesOnly;
+favoritesFilterBtn.classList.toggle('active',favoritesOnly);
+favoritesFilterBtn.textContent=favoritesOnly?'★ Ver todos':'★ Mis favoritos';
+aplicarFiltroVisual();
+info.textContent=favoritesOnly
+?`Mostrando ${favorites.size} elemento${favorites.size===1?'':'s'} favorito${favorites.size===1?'':'s'}.`
+:'Filtro de favoritos eliminado.';
 }
 
 function alternarComparacion(){
@@ -262,10 +334,56 @@ function cerrarDetalle(){
 detailsModal.hidden=true;
 }
 
+function iniciarQuiz(){
+quizModal.hidden=false;
+quizScore=0;
+nuevaPreguntaQuiz();
+}
+
+function nuevaPreguntaQuiz(){
+const correcto=elementos[Math.floor(Math.random()*elementos.length)];
+const tipos=['simbolo','categoria','estado','numero','periodo','grupo'];
+const tipo=tipos[Math.floor(Math.random()*tipos.length)];
+const configuraciones={
+simbolo:{texto:`¿Cuál es el símbolo del elemento <strong>${correcto[2]}</strong>?`,respuesta:correcto[1],valor:el=>el[1]},
+categoria:{texto:`¿A qué categoría pertenece <strong>${correcto[2]}</strong>?`,respuesta:correcto[4],valor:el=>el[4]},
+estado:{texto:`¿Cuál es el estado físico del <strong>${correcto[2]}</strong>?`,respuesta:estadoFisico(correcto[1]),valor:el=>estadoFisico(el[1])},
+numero:{texto:`¿Cuál es el número atómico del <strong>${correcto[2]}</strong>?`,respuesta:String(correcto[0]),valor:el=>String(el[0])},
+periodo:{texto:`¿En qué período se encuentra el <strong>${correcto[2]}</strong>?`,respuesta:String(correcto[5]),valor:el=>String(el[5])},
+grupo:{texto:`¿En qué grupo se encuentra el <strong>${correcto[2]}</strong>?`,respuesta:String(correcto[6]),valor:el=>String(el[6])}
+};
+const configuracion=configuraciones[tipo];
+const opciones=[configuracion.respuesta];
+while(opciones.length<4){
+const candidata=configuracion.valor(elementos[Math.floor(Math.random()*elementos.length)]);
+if(!opciones.includes(candidata))opciones.push(candidata);
+}
+opciones.sort(()=>Math.random()-.5);
+quizQuestion={respuesta:configuracion.respuesta};
+document.getElementById('quiz-content').innerHTML=`<h2 id="quiz-title">Quiz de elementos</h2><div class="quiz-score">Puntuación: ${quizScore}</div><p class="quiz-question">${configuracion.texto}</p><div class="quiz-options">${opciones.map(opcion=>`<button data-answer="${opcion}">${opcion}</button>`).join('')}</div><p class="quiz-feedback" aria-live="polite"></p>`;
+document.querySelectorAll('.quiz-options button').forEach(boton=>boton.onclick=resolverPreguntaQuiz);
+}
+
+function resolverPreguntaQuiz(event){
+const botones=document.querySelectorAll('.quiz-options button');
+botones.forEach(boton=>boton.disabled=true);
+const correcto=event.currentTarget.dataset.answer===quizQuestion.respuesta;
+event.currentTarget.classList.add(correcto?'correct':'incorrect');
+if(correcto)quizScore++;
+if(!correcto)[...botones].find(boton=>boton.dataset.answer===quizQuestion.respuesta).classList.add('correct');
+document.querySelector('.quiz-feedback').textContent=correcto?'¡Correcto!':'La respuesta correcta era '+quizQuestion.respuesta+'.';
+const siguiente=document.createElement('button');
+siguiente.textContent='Siguiente pregunta';
+siguiente.onclick=nuevaPreguntaQuiz;
+document.querySelector('.quiz-feedback').after(siguiente);
+}
+
 function mostrarComparacion(){
 const a=obtenerElemento(comparison[0]);
 const b=obtenerElemento(comparison[1]);
-document.getElementById('comparison-content').innerHTML=`<h2>Comparación de elementos</h2><div class="comparison-grid"><div><h2>${a[1]} — ${a[2]}</h2><p>Número atómico: ${a[0]}</p><p>Masa atómica: ${a[3]} u</p><p>Categoría: ${a[4]}</p><p>Estado físico: ${estadoFisico(a[1])}</p><p>Período / grupo: ${a[5]} / ${a[6]}</p></div><div><h2>${b[1]} — ${b[2]}</h2><p>Número atómico: ${b[0]}</p><p>Masa atómica: ${b[3]} u</p><p>Categoría: ${b[4]}</p><p>Estado físico: ${estadoFisico(b[1])}</p><p>Período / grupo: ${b[5]} / ${b[6]}</p></div></div>`;
+const indicador=(valorA,valorB)=>valorA===valorB?'igual':valorA>valorB?'mayor':'menor';
+const tarjeta=(el,otro)=>`<div class="comparison-card"><div class="comparison-symbol" style="background:${colores[el[4]]||'#607D8B'}">${el[1]}</div><h2>${el[2]}</h2><p>Número atómico: <strong class="${indicador(el[0],otro[0])}">${el[0]}</strong></p><p>Masa atómica: <strong class="${indicador(el[3],otro[3])}">${el[3]} u</strong></p><p>Categoría: ${el[4]}</p><p>Estado físico: ${estadoFisico(el[1])}</p><p>Período / grupo: ${el[5]} / ${el[6]}</p></div>`;
+document.getElementById('comparison-content').innerHTML=`<h2>Comparación de elementos</h2><p class="comparison-hint">Verde indica el valor mayor y azul el menor.</p><div class="comparison-grid">${tarjeta(a,b)}${tarjeta(b,a)}</div>`;
 comparisonModal.hidden=false;
 }
 
@@ -308,6 +426,9 @@ results.hidden=encontrados.length===0;
 
 function limpiarFiltro(){
 filterCategory=null;
+favoritesOnly=false;
+favoritesFilterBtn.classList.remove('active');
+favoritesFilterBtn.textContent='★ Mis favoritos';
 search.value='';
 results.hidden=true;
 actualizarEstilos();
@@ -387,13 +508,30 @@ seleccionarElemento(elementNodes.get(candidatos[0].el[0]));
 }
 }
 
+function iniciarAplicacion(){
+startScreen.hidden=true;
+app.hidden=false;
+}
+
+function volverInicio(){
+cerrarDetalle();
+comparisonModal.hidden=true;
+quizModal.hidden=true;
+startScreen.hidden=false;
+app.hidden=true;
+}
+
 document.getElementById('search-btn').onclick=buscarElemento;
 document.getElementById('clear-btn').onclick=limpiarFiltro;
 document.getElementById('favorite-btn').onclick=alternarFavorito;
+favoritesFilterBtn.onclick=alternarFiltroFavoritos;
 document.getElementById('compare-btn').onclick=alternarComparacion;
 document.getElementById('theme-btn').onclick=cambiarTema;
+soundBtn.onclick=alternarSonido;
 scale.onchange=actualizarEstilos;
 search.oninput=actualizarResultados;
+startBtn.onclick=iniciarAplicacion;
+document.addEventListener('pointermove',moverFondo,{passive:true});
 
 search.onkeydown=e=>{
 if(e.key==='Enter')buscarElemento();
@@ -401,6 +539,9 @@ if(e.key==='Enter')buscarElemento();
 
 document.getElementById('modal-close').onclick=cerrarDetalle;
 document.getElementById('comparison-close').onclick=()=>comparisonModal.hidden=true;
+document.getElementById('quiz-btn').onclick=iniciarQuiz;
+document.getElementById('quiz-close').onclick=()=>quizModal.hidden=true;
+homeBtn.onclick=volverInicio;
 
 detailsModal.addEventListener('click',e=>{
 if(e.target===detailsModal)cerrarDetalle();
@@ -410,7 +551,12 @@ comparisonModal.addEventListener('click',e=>{
 if(e.target===comparisonModal)comparisonModal.hidden=true;
 });
 
+quizModal.addEventListener('click',e=>{
+if(e.target===quizModal)quizModal.hidden=true;
+});
+
 document.addEventListener('keydown',e=>{
+if(e.target===search)return;
 if(e.key==='ArrowLeft')moverSeleccion('izquierda');
 if(e.key==='ArrowRight')moverSeleccion('derecha');
 if(e.key==='ArrowUp')moverSeleccion('arriba');
@@ -419,9 +565,12 @@ if(e.key==='Enter'&&selectedElement)mostrarDetalles(obtenerElemento(selectedElem
 if(e.key==='Escape'){
 cerrarDetalle();
 comparisonModal.hidden=true;
+quizModal.hidden=true;
 }
 });
 
 crearTabla();
 crearLeyenda();
 actualizarEstilos();
+actualizarBotonSonido();
+
